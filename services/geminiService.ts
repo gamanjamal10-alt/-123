@@ -1,11 +1,7 @@
-
 import { GoogleGenAI, Type } from '@google/genai';
 import { Idea } from '../types';
 
-if (!process.env.API_KEY) {
-    throw new Error("API_KEY environment variable is not set");
-}
-
+// The API key is expected to be set in the environment.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
 const ideaSchema = {
