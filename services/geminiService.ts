@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { Idea } from '../types';
+import { Idea, RefinedIdea } from '../types';
 
 const ideaSchema = {
     type: Type.OBJECT,
@@ -33,6 +33,36 @@ const ideaSchema = {
     },
     required: ['ideas']
 };
+
+const refinedIdeaSchema = {
+    type: Type.OBJECT,
+    properties: {
+        uniqueSellingProposition: {
+            type: Type.STRING,
+            description: "ما هي الميزة التنافسية الفريدة التي تميز هذه الفكرة عن المنافسين؟ (جملة واحدة)."
+        },
+        keyFeatures: {
+            type: Type.ARRAY,
+            description: "قائمة من 3-4 ميزات أساسية يجب توفرها في المنتج عند الإطلاق.",
+            items: {
+                type: Type.STRING
+            }
+        },
+        marketingStrategy: {
+            type: Type.STRING,
+            description: "وصف موجز لاستراتيجية تسويقية مقترحة للوصول إلى الجمهور المستهدف."
+        },
+        technicalStack: {
+            type: Type.ARRAY,
+            description: "اقتراح للمكدس التقني (Technologies stack) المطلوب لتنفيذ المشروع (مثال: React Native, Firebase, Node.js).",
+            items: {
+                type: Type.STRING
+            }
+        }
+    },
+    required: ['uniqueSellingProposition', 'keyFeatures', 'marketingStrategy', 'technicalStack']
+};
+
 
 export const generateIdeas = async (userInput: string): Promise<Idea[]> => {
     try {
@@ -73,5 +103,47 @@ export const generateIdeas = async (userInput: string): Promise<Idea[]> => {
     } catch (error) {
         console.error("Error calling Gemini API:", error);
         throw new Error("Failed to generate ideas from the API.");
+    }
+};
+
+export const refineIdea = async (idea: Idea): Promise<RefinedIdea> => {
+    try {
+        if (!process.env.API_KEY) {
+            throw new Error("API key is not set. Please set the API_KEY environment variable.");
+        }
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+        const prompt = `
+        بصفتك مستشارًا لتطوير المنتجات، قم بتحليل فكرة المشروع التالية وقم بتوسيعها إلى خطة عمل أولية.
+
+        الفكرة الحالية:
+        - المفهوم: ${idea.concept}
+        - الجمهور المستهدف: ${idea.targetAudience}
+        - طريقة الربح: ${idea.monetization}
+
+        المطلوب هو تقديم التفاصيل التالية باللغة العربية:
+        1.  **الميزة التنافسية الفريدة (uniqueSellingProposition):** ما الذي يجعل هذا المشروع فريدًا؟
+        2.  **الميزات الرئيسية (keyFeatures):** قائمة بأهم 3 أو 4 ميزات أساسية.
+        3.  **استراتيجية التسويق (marketingStrategy):** كيف يمكن الوصول للعملاء.
+        4.  **المكدس التقني المقترح (technicalStack):** التقنيات التي يمكن استخدامها.
+
+        أرجع النتائج بصيغة JSON فقط بناءً على المخطط المحدد.
+        `;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: refinedIdeaSchema,
+                temperature: 0.7,
+            }
+        });
+
+        const jsonText = response.text.trim();
+        return JSON.parse(jsonText);
+    } catch (error) {
+        console.error("Error calling Gemini API for refinement:", error);
+        throw new Error("Failed to refine the idea from the API.");
     }
 };
