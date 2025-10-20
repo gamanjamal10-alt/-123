@@ -1,9 +1,6 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { Idea } from '../types';
 
-// The API key is expected to be set in the environment.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 const ideaSchema = {
     type: Type.OBJECT,
     properties: {
@@ -39,6 +36,12 @@ const ideaSchema = {
 
 export const generateIdeas = async (userInput: string): Promise<Idea[]> => {
     try {
+        if (!process.env.API_KEY) {
+            throw new Error("API key is not set. Please set the API_KEY environment variable.");
+        }
+        // Initialize the SDK instance here to avoid app crash on load.
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
         const prompt = `
         بصفتك خبيرًا في استراتيجيات الأعمال والمنتجات الرقمية، قم بتحليل طلب المستخدم التالي وقم بتوليد 3 أفكار لمشاريع رقمية أو تطبيقات مربحة.
         
