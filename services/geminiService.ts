@@ -66,10 +66,6 @@ const refinedIdeaSchema = {
 
 export const generateIdeas = async (userInput: string): Promise<Idea[]> => {
     try {
-        if (!process.env.API_KEY) {
-            throw new Error("API key is not set. Please set the API_KEY environment variable.");
-        }
-        // Initialize the SDK instance here to avoid app crash on load.
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
         const prompt = `
@@ -102,15 +98,12 @@ export const generateIdeas = async (userInput: string): Promise<Idea[]> => {
         return parsedJson.ideas || [];
     } catch (error) {
         console.error("Error calling Gemini API:", error);
-        throw new Error("Failed to generate ideas from the API.");
+        throw error;
     }
 };
 
 export const refineIdea = async (idea: Idea): Promise<RefinedIdea> => {
     try {
-        if (!process.env.API_KEY) {
-            throw new Error("API key is not set. Please set the API_KEY environment variable.");
-        }
         const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
         const prompt = `
@@ -144,6 +137,6 @@ export const refineIdea = async (idea: Idea): Promise<RefinedIdea> => {
         return JSON.parse(jsonText);
     } catch (error) {
         console.error("Error calling Gemini API for refinement:", error);
-        throw new Error("Failed to refine the idea from the API.");
+        throw error;
     }
 };
